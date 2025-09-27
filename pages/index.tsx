@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 
 type Rec = { title: string; author: string; why: string };
@@ -6,6 +8,7 @@ export default function Home() {
   const [mood, setMood] = useState("");
   const [recs, setRecs] = useState<Rec[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   async function getRecs(e: React.FormEvent) {
     e.preventDefault();
@@ -13,6 +16,7 @@ export default function Home() {
 
     setLoading(true);
     setRecs([]);
+    setError("");
 
     try {
       const res = await fetch("/api/recommend", {
@@ -20,10 +24,18 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mood }),
       });
+
       const data = await res.json();
-      setRecs(data.recommendations || []);
-    } catch (err) {
+      console.log("API response:", data);
+
+      if (res.ok) {
+        setRecs(data.recommendations || []);
+      } else {
+        setError(data.message || "Error fetching recommendations");
+      }
+    } catch (err: any) {
       console.error(err);
+      setError(err.message || "Error fetching recommendations");
     } finally {
       setLoading(false);
     }
@@ -31,22 +43,17 @@ export default function Home() {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-[#0b1b3a] to-[#001429] text-white px-6">
-      {/* Hero Section */}
       <section className="text-center max-w-2xl space-y-6">
-        {/* Title */}
         <h1 className="text-5xl md:text-6xl font-bold leading-tight">
           Stories That{" "}
           <span className="bg-gradient-to-r from-yellow-400 via-yellow-300 to-blue-200 bg-clip-text text-transparent">
             Touch Your Soul
           </span>
         </h1>
-
-        {/* Subtitle */}
         <p className="text-lg text-blue-200">
           Discover books by the emotions they evoke
         </p>
 
-        {/* Card */}
         <div className="mt-10 bg-[#0b1b3a]/80 backdrop-blur-lg rounded-2xl shadow-xl p-8 space-y-6 border border-[#1c2c4a]">
           <h2 className="text-xl font-semibold text-yellow-400">
             How are you feeling today?
@@ -55,7 +62,6 @@ export default function Home() {
             Type an emotion, and Tommy will recommend books that resonate.
           </p>
 
-          {/* Emotion Input */}
           <form
             onSubmit={getRecs}
             className="flex flex-col md:flex-row items-center gap-4 justify-center mt-4"
@@ -77,18 +83,23 @@ export default function Home() {
             </button>
           </form>
 
-          {/* Recommendations */}
+          {error && <p className="text-red-400 mt-4">{error}</p>}
+
+          {recs.length === 0 && !loading && !error && (
+            <p className="text-blue-200 mt-4">No recommendations found. Try a different mood!</p>
+          )}
+
           {recs.length > 0 && (
             <div className="mt-8 text-left space-y-4">
               <h3 className="text-lg font-semibold text-yellow-300">Your Book Matches</h3>
-              <ul className="space-y-3">
+              <ul className="space-y-4">
                 {recs.map((rec, i) => (
                   <li
                     key={i}
-                    className="bg-[#142347]/60 p-4 rounded-xl border border-[#1c2c4a]"
+                    className="bg-[#142347]/60 p-5 rounded-2xl border border-[#1c2c4a] shadow-md hover:shadow-lg transform hover:-translate-y-1 transition-all duration-200"
                   >
-                    <p className="text-base font-semibold">{rec.title}</p>
-                    <p className="text-sm text-blue-200">by {rec.author}</p>
+                    <p className="text-lg font-bold text-yellow-300">{rec.title}</p>
+                    <p className="text-sm text-blue-200 mt-1">by {rec.author}</p>
                     <p className="text-sm text-blue-300 mt-2">{rec.why}</p>
                   </li>
                 ))}
