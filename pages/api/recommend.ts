@@ -1,24 +1,17 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import OpenAI from "openai";
+import OpenAI, { ResponseOutputTextChoice } from "openai";
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Only allow POST requests
-  if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method not allowed" });
-  }
+  if (req.method !== "POST") return res.status(405).json({ message: "Method not allowed" });
 
   const { mood } = req.body;
-
-  if (!mood || !mood.trim()) {
-    return res.status(400).json({ message: "Mood is required" });
-  }
+  if (!mood || !mood.trim()) return res.status(400).json({ message: "Mood is required" });
 
   try {
-    // Prompt for OpenAI
     const prompt = `
 You are a literary curator. Recommend 3 books that match the mood: "${mood}".
 For each book, include:
@@ -31,19 +24,25 @@ Respond in JSON format ONLY:
 ]
 `;
 
-    // Call OpenAI API
     const completion = await client.responses.create({
       model: "gpt-4.1-mini",
       input: prompt,
     });
 
-    let text = completion.output[0]?.content[0]?.text || "[]";
+    // Type-safe extraction
+    let text = "[]";
+    const firstOutput = completion.output[0];
+    if (firstOutput && "content" in firstOutput) {
+      const contentArray = (firstOutput as { content: ResponseOutputTextChoice[] }).content;
+      if (Array.isArray(contentArray) && contentArray.length > 0) {
+        text = contentArray[0].text || "[]";
+      }
+    }
 
-    // Robust cleaning: remove ```json or ``` and trim whitespace/newlines
+    // Clean Markdown code blocks
     text = text.replace(/^```json\s*|```$/g, "").trim();
 
     let recommendations: { title: string; author: string; why: string }[] = [];
-
     try {
       recommendations = JSON.parse(text);
     } catch (err) {
