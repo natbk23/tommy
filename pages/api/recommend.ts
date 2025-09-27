@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import OpenAI, { ResponseOutputTextChoice } from "openai";
+import OpenAI from "openai";
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -29,11 +29,11 @@ Respond in JSON format ONLY:
       input: prompt,
     });
 
-    // Type-safe extraction
+    // Type-safe extraction without external type import
     let text = "[]";
     const firstOutput = completion.output[0];
     if (firstOutput && "content" in firstOutput) {
-      const contentArray = (firstOutput as { content: ResponseOutputTextChoice[] }).content;
+      const contentArray = (firstOutput as any).content; // cast to any
       if (Array.isArray(contentArray) && contentArray.length > 0) {
         text = contentArray[0].text || "[]";
       }
