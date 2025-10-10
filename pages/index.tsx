@@ -1,6 +1,6 @@
-"use client";
-
 import { useState } from "react";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 
 type Rec = { title: string; author: string; why: string };
 
@@ -8,106 +8,121 @@ export default function Home() {
   const [mood, setMood] = useState("");
   const [recs, setRecs] = useState<Rec[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  async function getRecs(e: React.FormEvent) {
-    e.preventDefault();
+  async function getRecs(e?: React.FormEvent) {
+    e?.preventDefault();
     if (!mood.trim()) return;
 
     setLoading(true);
     setRecs([]);
-    setError("");
-
     try {
       const res = await fetch("/api/recommend", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mood }),
       });
-
       const data = await res.json();
-      console.log("API response:", data);
-
-      if (res.ok) {
-        setRecs(data.recommendations || []);
-      } else {
-        setError(data.message || "Error fetching recommendations");
-      }
-    } catch (err: any) {
+      setRecs(data.recommendations || []);
+    } catch (err) {
       console.error(err);
-      setError(err.message || "Error fetching recommendations");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-[#0b1b3a] to-[#001429] text-white px-6">
-      <section className="text-center max-w-2xl space-y-6">
-        <h1 className="text-5xl md:text-6xl font-bold leading-tight">
-          Stories That{" "}
-          <span className="bg-gradient-to-r from-yellow-400 via-yellow-300 to-blue-200 bg-clip-text text-transparent">
-            Touch Your Soul
-          </span>
-        </h1>
-        <p className="text-lg text-blue-200">
-          Discover books by the emotions they evoke
-        </p>
+    <div className="min-h-screen flex flex-col text-tommy-cream grain">
+      <Header />
 
-        <div className="mt-10 bg-[#0b1b3a]/80 backdrop-blur-lg rounded-2xl shadow-xl p-8 space-y-6 border border-[#1c2c4a]">
-          <h2 className="text-xl font-semibold text-yellow-400">
-            How are you feeling today?
-          </h2>
-          <p className="text-sm text-blue-100">
-            Type an emotion, and Tommy will recommend books that resonate.
-          </p>
-
-          <form
-            onSubmit={getRecs}
-            className="flex flex-col md:flex-row items-center gap-4 justify-center mt-4"
-          >
-            <input
-              type="text"
-              value={mood}
-              onChange={(e) => setMood(e.target.value)}
-              placeholder="e.g. nostalgic, anxious, hopeful..."
-              className="w-full md:w-2/3 px-4 py-3 rounded-full border border-blue-400 bg-transparent text-white placeholder-blue-300 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              required
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full md:w-auto px-6 py-3 rounded-full bg-yellow-400 hover:bg-yellow-300 text-black font-semibold shadow-lg transition disabled:opacity-50"
+      <main className="flex-1 flex flex-col items-center px-6 md:px-12 py-12">
+        <div className="w-full max-w-5xl">
+          {/* ===== HERO ===== */}
+          <section className="text-center mb-12">
+            <h1
+              className="text-5xl md:text-7xl font-bold leading-tight tracking-tight"
+              style={{ fontFamily: "Georgia, serif" }}
             >
-              {loading ? "Finding..." : "Get Recommendations"}
-            </button>
-          </form>
+              Stories That{" "}
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-tommy-brown via-tommy-tan to-tommy-olive">
+                Speak to
+              </span>{" "}
+              <span className="text-tommy-olive">You</span>
+            </h1>
+            <p className="mt-5 text-lg md:text-xl text-tommy-cream/85">
+              Name your feeling, find your story
+            </p>
+          </section>
 
-          {error && <p className="text-red-400 mt-4">{error}</p>}
+          {/* ===== PROMPT CARD ===== */}
+          <section className="paper p-8 rounded-2xl">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              {/* Left: copy */}
+              <div className="md:w-[44%]">
+                <h2
+                  className="text-2xl md:text-3xl font-semibold text-tommy-golden"
+                  style={{ fontFamily: "Georgia, serif" }}
+                >
+                  How are you feeling today?
+                </h2>
+                <p className="text-tommy-cream/80 mt-1 text-sm md:text-base">
+                  Tommy will find books that resonate
+                </p>
+              </div>
 
-          {recs.length === 0 && !loading && !error && (
-            <p className="text-blue-200 mt-4">No recommendations found. Try a different mood!</p>
-          )}
-
-          {recs.length > 0 && (
-            <div className="mt-8 text-left space-y-4">
-              <h3 className="text-lg font-semibold text-yellow-300">Your Book Matches</h3>
-              <ul className="space-y-4">
-                {recs.map((rec, i) => (
-                  <li
-                    key={i}
-                    className="bg-[#142347]/60 p-5 rounded-2xl border border-[#1c2c4a] shadow-md hover:shadow-lg transform hover:-translate-y-1 transition-all duration-200"
-                  >
-                    <p className="text-lg font-bold text-yellow-300">{rec.title}</p>
-                    <p className="text-sm text-blue-200 mt-1">by {rec.author}</p>
-                    <p className="text-sm text-blue-300 mt-2">{rec.why}</p>
-                  </li>
-                ))}
-              </ul>
+              {/* Right: form */}
+              <form
+                onSubmit={getRecs}
+                className="flex-1 flex gap-3 md:gap-4 items-center mt-6 md:mt-0"
+              >
+                <div className="flex-1 flex items-center rounded-full border border-tommy-brown/45 bg-tommy-cream/5 px-5 py-3 shadow-inner">
+                  <input
+                    type="text"
+                    value={mood}
+                    onChange={(e) => setMood(e.target.value)}
+                    placeholder="e.g. rainy-cabin cozy, bittersweet, lyrical"
+                    className="flex-1 bg-transparent outline-none placeholder-tommy-cream/60 text-tommy-cream"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-6 py-3 rounded-full bg-gradient-to-b from-tommy-golden to-tommy-tan text-tommy-ink font-semibold btn-cta hover:brightness-110 active:translate-y-[1px] disabled:opacity-60 transition"
+                >
+                  {loading ? "Thinking..." : "Get Recs"}
+                </button>
+              </form>
             </div>
-          )}
+
+            {/* ===== RESULTS ===== */}
+            {recs.length > 0 && (
+              <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {recs.map((r, i) => (
+                  <article key={i} className="paper-cream p-5 rounded-[14px] fade-up">
+                    <div className="flex items-start justify-between gap-3">
+                      <h3
+                        className="font-semibold text-lg ink"
+                        style={{ fontFamily: "Georgia, serif" }}
+                      >
+                        {r.title}
+                      </h3>
+                      <span className="text-sm opacity-70 whitespace-nowrap ink">
+                        by {r.author}
+                      </span>
+                    </div>
+
+                    <div className="rule my-3" />
+
+                    <p className="text-sm leading-relaxed ink">{r.why}</p>
+
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
         </div>
-      </section>
-    </main>
+      </main>
+
+      <Footer />
+    </div>
   );
 }
