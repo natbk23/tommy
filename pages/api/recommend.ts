@@ -1,58 +1,111 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import OpenAI from "openai";
+  import OpenAI from "openai";
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+  const client = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "POST") return res.status(405).json({ message: "Method not allowed" });
-
-  const { mood } = req.body;
-  if (!mood || !mood.trim()) return res.status(400).json({ message: "Mood is required" });
-
-  try {
-    const prompt = `
-You are a literary curator. Recommend 3 books that match the mood: "${mood}".
-For each book, include:
-- Title
-- Author
-- Why it matches this emotion
-Respond in JSON format ONLY:
-[
-  { "title": "...", "author": "...", "why": "..." }
-]
-`;
-
-    const completion = await client.responses.create({
-      model: "gpt-4.1-mini",
-      input: prompt,
-    });
-
-    // Type-safe extraction without external type import
-    let text = "[]";
-    const firstOutput = completion.output[0];
-    if (firstOutput && "content" in firstOutput) {
-      const contentArray = (firstOutput as any).content; // cast to any
-      if (Array.isArray(contentArray) && contentArray.length > 0) {
-        text = contentArray[0].text || "[]";
-      }
-    }
-
-    // Clean Markdown code blocks
-    text = text.replace(/^```json\s*|```$/g, "").trim();
-
-    let recommendations: { title: string; author: string; why: string }[] = [];
+  async function getBookCover(title: string, author: string): Promise<string
+   | null> {
     try {
-      recommendations = JSON.parse(text);
-    } catch (err) {
-      console.error("JSON parse error:", err, "Raw text:", text);
-      recommendations = [];
+      const searchQuery = encodeURIComponent(`${title} ${author}`);
+      const searchRes = await
+  fetch(`https://openlibrary.org/search.json?q=${searchQuery}&limit=1`);
+      const searchData = await searchRes.json();
+
+      console.log(`Searching for: ${title} by ${author}`);
+
+      if (searchData.docs && searchData.docs.length > 0) {
+        const book = searchData.docs[0];
+        console.log(`Found book:`, book);
+
+        if (book.isbn && book.isbn.length > 0) {
+          const isbn = book.isbn[0];
+          const coverUrl =
+  `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`;
+          console.log(`Cover URL (ISBN): ${coverUrl}`);
+          return coverUrl;
+        }
+
+        if (book.cover_i) {
+          const coverUrl =
+  `https://covers.openlibrary.org/b/id/${book.cover_i}-L.jpg`;
+          console.log(`Cover URL (cover_i): ${coverUrl}`);
+          return coverUrl;
+        }
+      }
+
+      console.log(`No cover found for: ${title}`);
+      return null;
+    } catch (error) {
+      console.error("Error fetching book cover:", error);
+      return null;
+    }
+  }
+
+  export default async function handler(req: NextApiRequest, res: 
+  NextApiResponse) {
+    if (req.method !== "POST") {
+      return res.status(405).json({ message: "Method not allowed" });
     }
 
-    res.status(200).json({ recommendations });
-  } catch (error: any) {
-    console.error("OpenAI error:", error);
-    res.status(500).json({ message: "Error fetching recommendations" });
+    const { mood } = req.body;
+    if (!mood || !mood.trim()) {
+      return res.status(400).json({ message: "Mood is required" });
+    }
+
+    try {
+      const prompt = `You are a literary curator. Recommend 10 books that 
+  match the mood: "${mood}". For each book, include: Title, Author, Why it 
+  matches this emotion. Respond in JSON format ONLY: [{ "title": "...", 
+  "author": "...", "why": "..." }]`;
+
+      const completion = await client.responses.create({
+        model: "gpt-4.1-mini",
+        input: prompt,
+      });
+
+      let text = "[]";
+      const firstOutput = completion.output[0];
+      if (firstOutput && "content" in firstOutput) {
+        const contentArray = (firstOutput as any).content;
+        if (Array.isArray(contentArray) && contentArray.length > 0) {
+          text = contentArray[0].text || "[]";
+        }
+      }
+
+      text = text.replace(/^```json\s*|```$/g, "").trim();
+
+      let recommendations: { title: string; author: string; why: string }[]
+  = [];
+      try {
+        recommendations = JSON.parse(text);
+      } catch (err) {
+        console.error("JSON parse error:", err, "Raw text:", text);
+        recommendations = [];
+      }
+
+      console.log(`Got ${recommendations.length} recommendations, fetching 
+  covers...`);
+
+      const recommendationsWithCovers = await Promise.all(
+        recommendations.map(async (rec) => {
+          const imageUrl = await getBookCover(rec.title, rec.author);
+          return {
+            title: rec.title,
+            author: rec.author,
+            why: rec.why,
+            imageUrl: imageUrl || undefined,
+          };
+        })
+      );
+
+      console.log("Final recommendations with covers:",
+  JSON.stringify(recommendationsWithCovers, null, 2));
+
+      res.status(200).json({ recommendations: recommendationsWithCovers });
+    } catch (error: any) {
+      console.error("OpenAI error:", error);
+      res.status(500).json({ message: "Error fetching recommendations" });
+    }
   }
-}
