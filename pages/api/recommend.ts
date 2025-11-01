@@ -55,7 +55,7 @@ import { NextApiRequest, NextApiResponse } from "next";
     }
 
     try {
-      const prompt = `You are a literary curator. Recommend 10 books that 
+      const prompt = `You are a literary curator. Recommend 12 books that 
   match the mood: "${mood}". For each book, include: Title, Author, Why it 
   matches this emotion. Respond in JSON format ONLY: [{ "title": "...", 
   "author": "...", "why": "..." }]`;
