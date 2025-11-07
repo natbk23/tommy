@@ -1,8 +1,11 @@
 import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
 import Footer from '@/components/Footer';
+import { createClient } from "@/utils/supabase/server/createClient";
 
-export default function Home() {
+export default async function Home() {
+  const supabase = await createClient();
+  
   return (
     <main className="min-h-screen flex flex-col">
       <Header />
