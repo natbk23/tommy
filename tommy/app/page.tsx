@@ -6,7 +6,7 @@ export default function Home() {
   return (
     <main className="min-h-screen flex flex-col">
       <Header />
-      <div className="grow flex items-center justify-center pt-16">
+      <div className="grow flex items-center justify-center pt-4">
         <SearchBar />
       </div>
       <Footer />

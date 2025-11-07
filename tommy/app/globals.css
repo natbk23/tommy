@@ -1,28 +1,44 @@
 @import "tailwindcss";
 
+
 :root {
-  --background-gradient: linear-gradient(90deg, #f6e7d7 0%, #fbead1 50%, #e9cba7 100%);
-  --background: #fbead1;
-  --foreground: #a86b32;
+  --background: #000000;
+  --foreground: #ffffff;
+  --accent: #fdfdfd;
+  --border: #ffffff;
+  --link: #ffffff;
+  --link-hover: #ffffff;
+  --input-bg: #ffffff;
+  --input-border: #ffffff;
+  --input-text: #e03838;
+  --input-placeholder: #c89f6a;
+  --heading-text: #a86b32;
+  --paragraph-text: #171717;
+  --button-text: #ffcc91;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background-gradient: linear-gradient(90deg, #2d1c0f 0%, #3a2a1a 50%, #5c3c1a 100%);
-    --background: #2d1c0f;
-    --foreground: #e9cba7;
+    --background: #c2905d;
+    --foreground: #ffffff;
+    --accent: #ffffff;
+    --border: #ffffff;
+    --link: #ffffff;
+    --link-hover: #ffffff;
+    --input-bg: #ffffff;
+    --input-border: #ffffff;
+    --input-text: #ffffff;
+    --input-placeholder: #ffffff;
+    --heading-text: #ffffff;
+    --paragraph-text: #ffffff;
+    --button-text: #ffffff;
   }
 }
 
 body {
-  background: var(--background-gradient);
+  background: var(--background);
   color: var(--foreground);
   font-family: 'Georgia', 'Times New Roman', serif;
 }
