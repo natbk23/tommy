@@ -1,26 +1,35 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import BookRecommendations from './BookRecommendations';
+import { Book } from '@/types/Library';
 
 export default function SearchBar() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [books, setBooks] = useState([]);
+  const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  async function handleSearch(e) {
+  async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError('');
     setBooks([]);
+
     try {
-      // Replace with your actual API endpoint
-      const res = await fetch(`/api/recommend?query=${encodeURIComponent(searchQuery)}`);
-      if (!res.ok) throw new Error('Failed to fetch recommendations');
+      const res = await fetch('/api/recommend', {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mood: searchQuery, count: 12 }),
+      });
+
+      if (!res.ok) throw new Error('Failed to fetch recommendations.');
+
       const data = await res.json();
-      setBooks(data.books || []);
+      // API returns { recommendations: [...] }
+      setBooks(data.recommendations || []);
     } catch (err) {
+      console.error(err);
       setError('Could not fetch recommendations.');
     } finally {
       setLoading(false);
@@ -28,13 +37,15 @@ export default function SearchBar() {
   }
 
   return (
-  <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center font-serif bg-transparent rounded-xl shadow-none py-10">
-  <h1 className="text-8xl font-bold text-yellow-950 mb-4 drop-shadow-sm">
+    <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center font-serif bg-transparent rounded-xl shadow-none py-10">
+      <h1 className="text-8xl font-bold text-yellow-950 mb-4 drop-shadow-sm">
         Stories That Speak to You
       </h1>
-  <p className="text-2xl text-gray-600 mb-8">
+      <p className="text-2xl text-gray-600 mb-8">
         Name your feeling, find your story
       </p>
+
+      {/* Search Form */}
       <form className="w-full max-w-2xl" onSubmit={handleSearch}>
         <div className="relative">
           <input
@@ -53,8 +64,11 @@ export default function SearchBar() {
           </button>
         </div>
       </form>
+
       {error && <div className="mt-4 text-red-600">{error}</div>}
-      <BookRecommendations books={books} />
+
+      {/* Book Recommendations */}
+      <BookRecommendations books={books} loading={loading} />
     </div>
   );
 }
