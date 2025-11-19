@@ -21,7 +21,7 @@ export default async function Home() {
   }
   
   return (
-    <main className="min-h-screen flex flex-col">
+    <main>
       <Header />
       
       <div className="grow flex flex-col items-center justify-start p-8">
@@ -29,11 +29,12 @@ export default async function Home() {
           <SearchBar />
         </div>
         
-        {/* 2. Pass the data to the FeaturedBooks component */}
-        {featuredBooks && featuredBooks.length > 0 && (
-          <FeaturedBooks books={featuredBooks} />
-        )}
       </div>
+
+      {/* 2. Pass the data to the FeaturedBooks component */}
+      {featuredBooks && featuredBooks.length > 0 && (
+        <FeaturedBooks books={featuredBooks} />
+      )}
       
       <Footer />
     </main>

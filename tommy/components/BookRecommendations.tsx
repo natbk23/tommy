@@ -8,32 +8,25 @@ interface BookRecommendationsProps {
 }
 
 export default function BookRecommendations({ books, loading }: BookRecommendationsProps) {
-  if (loading) {
-    return (
-      <div className="mt-10 text-lg text-gray-600 animate-pulse">
-        Finding stories for you...
-      </div>
-    );
-  }
 
   if (!books || books.length === 0) {
     return null;
   }
 
   return (
-    <section className="w-full max-w-6xl mx-auto px-6 py-10">
+    <section className="w-full px-6 py-10">
       <h2 className="text-3xl font-bold mb-8 text-center text-yellow-950">
         Recommended Reads
       </h2>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-10">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-12">
         {books.map((book, i) => (
           <div
             key={book.id || `${book.title}-${i}`}
             className="flex flex-col items-center text-center space-y-3"
           >
-            <div className="relative w-full aspect-[2/3] max-w-40 bg-gray-100 rounded-lg shadow-md overflow-hidden group">
-              <div className="absolute inset-y-0 left-0 w-[6%] bg-gradient-to-r from-gray-300 to-transparent" />
+            <div className="relative w-full aspect-2/3 max-w-56 overflow-hidden group rounded-2xl">
+              <div className="absolute inset-y-0 left-0 w-[6%] bg-linear-to-r to-transparent" />
               <img
                 src={book.cover_url || '/placeholder-cover.jpg'}
                 alt={`Cover of ${book.title}`}
@@ -41,8 +34,8 @@ export default function BookRecommendations({ books, loading }: BookRecommendati
               />
             </div>
 
-            <h3 className="text-md font-semibold truncate max-w-40">{book.title}</h3>
-            <p className="text-sm text-gray-500 truncate max-w-40">
+            <h3 className="text-lg font-semibold truncate w-full px-2">{book.title}</h3>
+            <p className="text-base text-gray-500 truncate w-full px-2">
               {book.authors?.name}
             </p>
           </div>

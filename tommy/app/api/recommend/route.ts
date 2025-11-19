@@ -1,22 +1,17 @@
-// app/api/recommend/route.ts (CORRECT for App Router)
+// app/api/recommend/route.ts
+// This file is built for the NEXT.JS APP ROUTER (Next.js 13+).
 
-import { NextRequest, NextResponse } from "next/server"; // ⬅️ NEW IMPORTS
+import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
-import { createClient } from "@supabase/supabase-js";
 
-// Initialize external clients (remains the same)
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-// [Your helper function getBookCover remains here]
+/**
+ * Attempts to fetch a book cover image URL from Open Library.
+ */
 async function getBookCover(title: string, author: string): Promise<string | null> {
-  // ... (content of getBookCover)
   try {
     const searchQuery = encodeURIComponent(`${title} ${author}`);
     const searchRes = await fetch(`https://openlibrary.org/search.json?q=${searchQuery}&limit=1`);
@@ -24,93 +19,115 @@ async function getBookCover(title: string, author: string): Promise<string | nul
 
     if (searchData.docs && searchData.docs.length > 0) {
       const book = searchData.docs[0];
-      if (book.isbn && book.isbn.length > 0) {
-        const isbn = book.isbn[0];
-        return `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`;
-      }
-      if (book.cover_i) {
-        return `https://covers.openlibrary.org/b/id/${book.cover_i}-L.jpg`;
+      const coverId = book.isbn?.[0] || book.cover_i;
+
+      if (coverId) {
+        const coverType = book.isbn?.[0] ? 'isbn' : 'id';
+        const coverUrl = `https://covers.openlibrary.org/b/${coverType}/${coverId}-L.jpg`;
+        console.log(`Found cover via ${coverType}: ${coverUrl}`);
+        return coverUrl;
       }
     }
+
+    console.log(`No cover found for: ${title}`);
     return null;
   } catch (error) {
     console.error("Error fetching book cover:", error);
     return null;
   }
 }
-// ------------------------------------------------------------------
 
-// 🟢 FIX: Export a named function called POST to handle POST requests
-export async function POST(req: NextRequest) {
-  // 1. New way to get the request body (use req.json())
-  const body = await req.json();
-  const { mood, count = 3 } = body;
-  
-  if (!mood || !mood.trim()) {
-    // 2. New way to return responses (use NextResponse)
-    return NextResponse.json({ message: "Mood is required" }, { status: 400 });
-  }
-
+/**
+ * Handles POST requests to /api/recommend. 
+ * This is the required NAMED EXPORT for the App Router.
+ */
+export async function POST(request: NextRequest) {
   try {
-    // 1️⃣ Ask OpenAI for recommendations
-    let prompt = `You are a literary curator. Recommend ${count} books matching the mood: "${mood}". 
-For each, include Title, Author, and Why it matches this mood.
-Respond ONLY in a JSON array: [{ "title": "...", "author": "...", "why": "..." }]`;
+    // 1. Parse the request body
+    const { mood, count = 3, exclude = [] } = await request.json();
 
+    if (!mood || typeof mood !== 'string' || !mood.trim()) {
+      // Use NextResponse for all responses in the App Router
+      return NextResponse.json({ message: "Mood is required" }, { status: 400 });
+    }
+
+    let prompt = `You are a literary curator. Recommend ${count} books that match the mood: "${mood}". For each book, include: Title, Author, Why it matches this emotion.`;
+
+    if (exclude.length > 0) {
+      prompt += `\n\nDo NOT recommend any of these books: ${exclude.join(", ")}`;
+    }
+
+    prompt += `\n\nRespond in JSON format ONLY: [{ "title": "...", "author": "...", "why": "..." }]`;
+
+    console.log("Prompt:", prompt);
+
+    // 2. Call the OpenAI API
     const completion = await client.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-4o-mini", // Use a valid model name
       messages: [
-        { role: "system", content: "You are a helpful assistant designed to output JSON." },
+        { role: "system", content: "You are a literary curator who responds ONLY with a JSON array." },
         { role: "user", content: prompt },
       ],
       response_format: { type: "json_object" }, 
     });
 
-    const raw = completion.choices[0]?.message?.content || "[]";
+    let text = completion.choices[0]?.message?.content || "[]";
+    text = text.replace(/^```json\s*|```$/g, "").trim();
+
+    // 3. Parse and validate recommendations
     let recommendations: { title: string; author: string; why: string }[] = [];
-
     try {
-      recommendations = JSON.parse(raw);
-      if (!Array.isArray(recommendations)) recommendations = [];
+      const parsedObject = JSON.parse(text);
+
+      // 1. Check for the "books" key (most recently observed)
+      if (parsedObject.books && Array.isArray(parsedObject.books)) {
+        recommendations = parsedObject.books;
+      } 
+      // 2. Check for the "recommendations" key 
+      else if (parsedObject.recommendations && Array.isArray(parsedObject.recommendations)) {
+        recommendations = parsedObject.recommendations;
+      }
+      // 3. Fallback: Check if the AI returned the array directly
+      else if (Array.isArray(parsedObject)) {
+        recommendations = parsedObject;
+      } else {
+        // If none of the recognized formats are found
+        throw new Error("Parsed result is not a recognized array structure.");
+      }
+        
     } catch (err) {
-      console.error("JSON parse error:", err, "Raw text:", raw);
+      // If parsing fails completely, this will log the error and the raw text
+      console.error("JSON parse error, fallback failed:", err, "Raw text:", text);
+      recommendations = [];
     }
 
-    // 2️⃣ Fetch your library books from Supabase
-    const { data: existingBooks, error: supabaseError } = await supabase
-      .from("books") // replace with your actual table name
-      .select("title, author");
+    console.log(`Got ${recommendations.length} recommendations, fetching covers...`);
 
-    if (supabaseError) {
-      console.error("Supabase error:", supabaseError);
-      return NextResponse.json({ message: "Database error" }, { status: 500 });
-    }
-
-    // Normalize for comparison
-    const existingSet = new Set(
-      existingBooks.map(
-        (b) => `${b.title.toLowerCase().trim()}|${b.author.toLowerCase().trim()}`
-      )
-    );
-
-    // 3️⃣ Filter out duplicates
-    const newBooks = recommendations.filter(
-      (r) =>
-        !existingSet.has(`${r.title.toLowerCase().trim()}|${r.author.toLowerCase().trim()}`)
-    );
-
-    // 4️⃣ Fetch covers for remaining books
+    // 4. Fetch covers in parallel
     const recommendationsWithCovers = await Promise.all(
-      newBooks.map(async (rec) => ({
-        ...rec,
-        imageUrl: await getBookCover(rec.title, rec.author),
-      }))
+      recommendations.map(async (rec) => {
+        const imageUrl = await getBookCover(rec.title, rec.author);
+        return {
+          title: rec.title,
+          author: rec.author,
+          why: rec.why,
+          cover_url: imageUrl,
+        };
+      })
     );
 
-    // 3. New way to return success response
+    console.log("Sending recommendations.");
+
+    // 5. Return the final response
     return NextResponse.json({ recommendations: recommendationsWithCovers }, { status: 200 });
+
   } catch (error) {
-    console.error("OpenAI or Supabase error:", error);
-    return NextResponse.json({ message: "Error fetching recommendations" }, { status: 500 });
+    console.error("Internal or OpenAI error:", error);
+    return NextResponse.json(
+      { message: "Error fetching recommendations" },
+      { status: 500 }
+    );
   }
 }
+
+// Ensure no other exports (especially no 'export default') are present.
