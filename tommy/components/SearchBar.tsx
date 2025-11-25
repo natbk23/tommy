@@ -19,8 +19,8 @@ export default function SearchBar() {
     try {
       const res = await fetch('/api/recommend', {
         method: "POST",
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mood: searchQuery, count: 12 }),
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ mood: searchQuery, count: 24 }),
       });
 
       if (!res.ok) throw new Error('Failed to fetch recommendations.');

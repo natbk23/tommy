@@ -42,3 +42,12 @@ body {
   color: var(--foreground);
   font-family: 'Georgia', 'Times New Roman', serif;
 }
+
+/* globals.css or your main CSS file */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

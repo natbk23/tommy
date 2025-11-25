@@ -10,6 +10,7 @@ export interface Book {
   cover_url: string;
   // This property holds the joined author data
   authors: Author;
+  why: string;
   // Add other properties you fetched, e.g.,
   // description: string;
   // rating: number | null;
