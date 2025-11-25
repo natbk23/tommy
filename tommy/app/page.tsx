@@ -40,3 +40,7 @@ export default async function Home() {
     </main>
   );
 }
+
+export const metadata = {
+  title: "Dashboard",
+};
