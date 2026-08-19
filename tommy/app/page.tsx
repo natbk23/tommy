@@ -7,6 +7,8 @@ import FeaturedBooks from '@/components/FeaturedBooks';
 import { createClient } from "@/utils/supabase/server/createClient";
 import type { Book } from "@/types/Library";
 
+export const dynamic = 'force-dynamic';
+
 export default async function Home() {
   let featuredBooks: Book[] | null = null;
 
@@ -24,7 +26,13 @@ export default async function Home() {
       featuredBooks = data;
     }
   } catch (err) {
-    console.error('Supabase client unavailable, skipping featured books:', err);
+    // Next.js signals internal control flow (e.g. dynamic-usage bailout,
+    // redirect, notFound) as thrown errors carrying a `digest`. Those must
+    // propagate to Next.js, not be treated as "Supabase unavailable".
+    if (err && typeof err === 'object' && 'digest' in err) {
+      throw err;
+    }
+    console.error('Unexpected error fetching featured books:', err);
   }
 
   return (
