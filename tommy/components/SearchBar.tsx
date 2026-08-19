@@ -27,8 +27,13 @@ export default function SearchBar() {
       if (!res.ok) throw new Error('Failed to fetch recommendations.');
 
       const data = await res.json();
-      // API returns { recommendations: [...] }
-      setBooks(data.recommendations || []);
+      // API returns { recommendations: [...] } without ids, so assign one
+      // per book here — needed to tell recommendations apart in LibraryContext.
+      const recommendations = (data.recommendations || []).map((book: Book) => ({
+        ...book,
+        id: book.id || crypto.randomUUID(),
+      }));
+      setBooks(recommendations);
     } catch (err) {
       console.error(err);
       setError('Could not fetch recommendations.');
@@ -53,7 +58,7 @@ export default function SearchBar() {
       const data = await res.json();
       if (data.recommendations && data.recommendations.length > 0) {
         const newBooks = [...books];
-        newBooks[index] = data.recommendations[0];
+        newBooks[index] = { ...data.recommendations[0], id: crypto.randomUUID() };
         setBooks(newBooks);
       }
     } catch (err) {

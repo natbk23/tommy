@@ -3,6 +3,7 @@
 import { Book } from '@/types/Library';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useRef, useEffect, useState } from 'react';
+import { useLibrary } from '@/context/LibraryContext';
 
 interface FeaturedBooksProps {
   books: Book[];
@@ -11,6 +12,7 @@ interface FeaturedBooksProps {
 export default function FeaturedBooks({ books }: FeaturedBooksProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
+  const { addToLibrary, removeFromLibrary, isInLibrary } = useLibrary();
 
   // Duplicate books for seamless infinite scroll
   const duplicatedBooks = [...books, ...books, ...books]; // 3x for smooth loop
@@ -110,6 +112,19 @@ export default function FeaturedBooks({ books }: FeaturedBooksProps) {
                       {book.authors?.name || 'Unknown Author'}
                     </p>
                   </div>
+
+                  <button
+                    onClick={() =>
+                      isInLibrary(book.id) ? removeFromLibrary(book.id) : addToLibrary(book)
+                    }
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors duration-200 ${
+                      isInLibrary(book.id)
+                        ? 'bg-amber-500 text-white hover:bg-amber-600'
+                        : 'bg-white/90 text-yellow-950 hover:bg-white'
+                    }`}
+                  >
+                    {isInLibrary(book.id) ? 'Saved' : 'Add to Library'}
+                  </button>
                 </div>
               </div>
             ))}

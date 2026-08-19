@@ -3,6 +3,7 @@
 import { Book } from "@/types/Library";
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useLibrary } from "@/context/LibraryContext";
 
 interface BookRecommendationsProps {
   books: Book[];
@@ -20,6 +21,7 @@ export default function BookRecommendations({
   onReplace,
 }: BookRecommendationsProps) {
   const [page, setPage] = useState(1);
+  const { addToLibrary, removeFromLibrary, isInLibrary } = useLibrary();
 
   if (!books || books.length === 0) return null;
 
@@ -111,6 +113,19 @@ export default function BookRecommendations({
                   {book.why}
                 </p>
               )}
+
+              <button
+                onClick={() =>
+                  isInLibrary(book.id) ? removeFromLibrary(book.id) : addToLibrary(book)
+                }
+                className={`mt-4 px-4 py-2 rounded-lg text-sm font-semibold transition-colors duration-200 ${
+                  isInLibrary(book.id)
+                    ? "bg-yellow-950 text-white hover:bg-yellow-900"
+                    : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                }`}
+              >
+                {isInLibrary(book.id) ? "Saved" : "Add to Library"}
+              </button>
             </div>
           </div>
           );
