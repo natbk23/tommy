@@ -7,6 +7,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 interface BookRecommendationsProps {
   books: Book[];
   loading?: boolean;
+  replacingIndex?: number | null;
+  onReplace?: (index: number) => void;
 }
 
 const BOOKS_PER_PAGE = 12;
@@ -14,6 +16,8 @@ const BOOKS_PER_PAGE = 12;
 export default function BookRecommendations({
   books,
   loading = false,
+  replacingIndex = null,
+  onReplace,
 }: BookRecommendationsProps) {
   const [page, setPage] = useState(1);
 
@@ -44,11 +48,43 @@ export default function BookRecommendations({
 
       {/* Books Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-        {currentBooks.map((book, i) => (
+        {currentBooks.map((book, i) => {
+          const globalIndex = startIdx + i;
+          const isReplacing = replacingIndex === globalIndex;
+          return (
           <div
-            key={book.id || `${book.title}-${startIdx + i}`}
-            className="flex flex-col bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300"
+            key={book.id || `${book.title}-${globalIndex}`}
+            className="group relative flex flex-col bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300"
+            style={{ opacity: isReplacing ? 0.5 : 1 }}
           >
+            {onReplace && (
+              <button
+                onClick={() => onReplace(globalIndex)}
+                disabled={isReplacing}
+                className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity p-2 bg-white/90 hover:bg-red-50 rounded-full shadow-md"
+                aria-label="Replace recommendation"
+                title="Get a different recommendation"
+              >
+                {isReplacing ? (
+                  <svg className="animate-spin h-4 w-4 text-yellow-950" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                    stroke="currentColor"
+                    className="w-4 h-4 text-red-600"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                  </svg>
+                )}
+              </button>
+            )}
+
             {/* Book Cover */}
             <div className="relative aspect-[2/3] overflow-hidden bg-gray-100">
               <div className="absolute inset-y-0 left-0 w-[8%] bg-gradient-to-r from-black/20 to-transparent z-10" />
@@ -77,7 +113,8 @@ export default function BookRecommendations({
               )}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Pagination Controls */}

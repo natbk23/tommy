@@ -28,7 +28,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="mt-8 pt-8">
-          <p className="text-center" style={{ color: 'var(--paragraph-text)' }}>&copy; 2025 Tommy. All rights reserved.</p>
+          <p className="text-center" style={{ color: 'var(--paragraph-text)' }}>&copy; 2026 Tommy. All rights reserved.</p>
         </div>
       </div>
     </footer>

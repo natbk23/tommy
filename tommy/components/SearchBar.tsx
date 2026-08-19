@@ -9,6 +9,7 @@ export default function SearchBar() {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [replacingIndex, setReplacingIndex] = useState<number | null>(null);
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -20,7 +21,7 @@ export default function SearchBar() {
       const res = await fetch('/api/recommend', {
         method: "POST",
         headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ mood: searchQuery, count: 24 }),
+        body: JSON.stringify({ mood: searchQuery, count: 12 }),
       });
 
       if (!res.ok) throw new Error('Failed to fetch recommendations.');
@@ -33,6 +34,32 @@ export default function SearchBar() {
       setError('Could not fetch recommendations.');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function replaceBook(index: number) {
+    setReplacingIndex(index);
+    try {
+      const excludeTitles = books.map((b) => b.title);
+
+      const res = await fetch('/api/recommend', {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mood: searchQuery, count: 1, exclude: excludeTitles }),
+      });
+
+      if (!res.ok) throw new Error('Failed to fetch replacement.');
+
+      const data = await res.json();
+      if (data.recommendations && data.recommendations.length > 0) {
+        const newBooks = [...books];
+        newBooks[index] = data.recommendations[0];
+        setBooks(newBooks);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setReplacingIndex(null);
     }
   }
 
@@ -70,7 +97,12 @@ export default function SearchBar() {
 
         </div>
         {/* Book Recommendations */}
-        <BookRecommendations books={books} loading={loading} />
+        <BookRecommendations
+          books={books}
+          loading={loading}
+          replacingIndex={replacingIndex}
+          onReplace={replaceBook}
+        />
     </div>
   );
 }
